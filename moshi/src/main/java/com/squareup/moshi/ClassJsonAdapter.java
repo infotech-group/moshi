@@ -84,10 +84,12 @@ final class ClassJsonAdapter<T> extends JsonAdapter<T> {
         Class<? extends Annotation> metadataClass =
             (Class<? extends Annotation>) Class.forName("kotlin.Metadata");
         if (rawType.isAnnotationPresent(metadataClass)) {
+          /*
           throw new IllegalArgumentException("Cannot serialize Kotlin type " + rawType.getName()
               + ". Reflective serialization of Kotlin classes without using kotlin-reflect has "
               + "undefined and unexpected behavior. Please use KotlinJsonAdapter from the "
               + "moshi-kotlin artifact or use code gen from the moshi-kotlin-codegen artifact.");
+              */
         }
       } catch (ClassNotFoundException ignored) {
 
