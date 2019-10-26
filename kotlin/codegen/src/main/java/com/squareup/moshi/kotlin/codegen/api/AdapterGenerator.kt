@@ -21,6 +21,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.NameAllocator
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
@@ -39,6 +40,8 @@ import java.lang.reflect.Constructor
 import java.lang.reflect.Type
 
 private val MOSHI_UTIL = Util::class.asClassName()
+private const val TO_STRING_PREFIX = "GeneratedJsonAdapter("
+private const val TO_STRING_SIZE_BASE = TO_STRING_PREFIX.length + 1 // 1 is the closing paren
 
 /** Generates a JSON adapter for a target type. */
 internal class AdapterGenerator(
@@ -155,11 +158,19 @@ internal class AdapterGenerator(
   }
 
   private fun generateToStringFun(): FunSpec {
+    val name = originalTypeName.rawType().simpleNames.joinToString(".")
+    val size = TO_STRING_SIZE_BASE + name.length
     return FunSpec.builder("toString")
         .addModifiers(KModifier.OVERRIDE)
         .returns(String::class)
-        .addStatement("return %S",
-            "GeneratedJsonAdapter(${originalTypeName.rawType().simpleNames.joinToString(".")})")
+        .addStatement(
+            "return %M(%L)·{ append(%S).append(%S).append('%L') }",
+            MemberName("kotlin.text", "buildString"),
+            size,
+            TO_STRING_PREFIX,
+            name,
+            ")"
+        )
         .build()
   }
 
@@ -203,7 +214,7 @@ internal class AdapterGenerator(
           result.addStatement("%N = %N.fromJson(%N)",
               property.localName, nameAllocator[property.delegateKey], readerParam)
         } else {
-          val exception = unexpectedNull(property.localName, readerParam)
+          val exception = unexpectedNull(property, readerParam)
           result.addStatement("%N = %N.fromJson(%N) ?: throw·%L",
               property.localName, nameAllocator[property.delegateKey], readerParam, exception)
         }
@@ -221,7 +232,7 @@ internal class AdapterGenerator(
           result.addStatement("%L -> %N = %N.fromJson(%N)",
               propertyIndex, property.localName, nameAllocator[property.delegateKey], readerParam)
         } else {
-          val exception = unexpectedNull(property.localName, readerParam)
+          val exception = unexpectedNull(property, readerParam)
           result.addStatement("%L -> %N = %N.fromJson(%N) ?: throw·%L",
               propertyIndex, property.localName, nameAllocator[property.delegateKey], readerParam,
               exception)
@@ -308,7 +319,8 @@ internal class AdapterGenerator(
       }
       if (!property.isTransient && property.isRequired) {
         val missingPropertyBlock =
-            CodeBlock.of("%T.missingProperty(%S, %N)", Util::class, property.localName, readerParam)
+            CodeBlock.of("%T.missingProperty(%S, %S, %N)",
+                MOSHI_UTIL, property.localName, property.jsonName, readerParam)
         result.addCode(" ?: throw·%L", missingPropertyBlock)
       }
       separator = ",\n"
@@ -341,8 +353,9 @@ internal class AdapterGenerator(
     return result.build()
   }
 
-  private fun unexpectedNull(identifier: String, reader: ParameterSpec): CodeBlock {
-    return CodeBlock.of("%T.unexpectedNull(%S, %N)", Util::class, identifier, reader)
+  private fun unexpectedNull(property: PropertyGenerator, reader: ParameterSpec): CodeBlock {
+    return CodeBlock.of("%T.unexpectedNull(%S, %S, %N)",
+        MOSHI_UTIL, property.localName, property.jsonName, reader)
   }
 
   private fun generateToJsonFun(): FunSpec {
