@@ -29,7 +29,8 @@ import java.math.BigDecimal;
 
 import static com.squareup.moshi.JsonScope.STREAMING_VALUE;
 
-final class JsonUtf8Reader extends JsonReader {
+public final class JsonUtf8Reader extends JsonReader {
+
   private static final long MIN_INCOMPLETE_INTEGER = Long.MIN_VALUE / 10;
   private static final Sink BLACKHOLE = Okio.blackhole();
 
@@ -1194,4 +1195,42 @@ final class JsonUtf8Reader extends JsonReader {
       peeked = PEEKED_BUFFERED;
     }
   }
+
+
+
+  //------------------INFOTECH CHANGED START-----------------------
+  public static JsonUtf8Reader of(BufferedSource source) {
+    return new JsonUtf8Reader(source);
+  }
+
+  /**
+   * _Idempotent_ function that peeks next value for null without consuming input
+   * Used in conjunction with streamValue() to skip NULL values without consuming internal buffer.
+   *
+   * @return whether the next JSON _value_ is null/NULL
+   */
+  public boolean nextValueIsNullDryRun() throws IOException {
+    int p = 0;
+    while (source.request(p + 1)) {
+      int c = buffer.getByte(p++);
+      if (c == ':' || c == ',' || c == '\n' || c == ' ' || c == '\r' || c == '\t') {
+        continue;
+      }
+      return c == 'n' || c == 'N';
+    }
+    throw new EOFException("End of input");
+  }
+
+  public void streamValue(JsonUtf8Writer writer) throws IOException {
+    writer.beforeStreamValue();
+    streamValue(writer.sink);
+  }
+
+  public void streamValue(BufferedSink writer) throws IOException {
+    readValue(writer);
+
+    pathIndices[stackSize - 1]++;
+    pathNames[stackSize - 1] = "null";
+  }
+  //------------------INFOTECH CHANGED END-------------------------
 }

@@ -17,8 +17,10 @@ package com.squareup.moshi;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
+
 import okio.Buffer;
 import okio.BufferedSink;
+import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Timeout;
@@ -32,7 +34,7 @@ import static com.squareup.moshi.JsonScope.NONEMPTY_DOCUMENT;
 import static com.squareup.moshi.JsonScope.NONEMPTY_OBJECT;
 import static com.squareup.moshi.JsonScope.STREAMING_VALUE;
 
-final class JsonUtf8Writer extends JsonWriter {
+public final class JsonUtf8Writer extends JsonWriter {
 
   /*
    * From RFC 7159, "All Unicode characters may be placed within the
@@ -60,7 +62,7 @@ final class JsonUtf8Writer extends JsonWriter {
   }
 
   /** The output data, containing at most one top-level array or object. */
-  private final BufferedSink sink;
+  final BufferedSink sink;
 
   /** The name/value separator; either ":" or ": ". */
   private String separator = ":";
@@ -435,4 +437,26 @@ final class JsonUtf8Writer extends JsonWriter {
     }
     replaceTop(nextTop);
   }
+
+
+
+  //------------------INFOTECH CHANGED START-----------------------
+  public static JsonUtf8Writer of(BufferedSink sink) {
+    return new JsonUtf8Writer(sink);
+  }
+
+  void beforeStreamValue() throws IOException {
+    if (promoteValueToName) {
+      throw new IllegalStateException(
+        "BufferedSink cannot be used as a map key in JSON at path " + getPath());
+    }
+    writeDeferredName();
+    beforeValue();
+  }
+
+  public void streamValue(BufferedSource source) throws IOException {
+    beforeStreamValue();
+    sink.writeAll(source);
+  }
+  //------------------INFOTECH CHANGED END-------------------------
 }
