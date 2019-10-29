@@ -79,14 +79,14 @@ final class ClassJsonAdapter<T> extends JsonAdapter<T> {
       if (Modifier.isAbstract(rawType.getModifiers())) {
         throw new IllegalArgumentException("Cannot serialize abstract class " + rawType.getName());
       }
-      /*
+      /*//------------------INFOTECH CHANGED START-----------------------
       if (Util.isKotlin(rawType)) {
         throw new IllegalArgumentException("Cannot serialize Kotlin type " + rawType.getName()
             + ". Reflective serialization of Kotlin classes without using kotlin-reflect has "
             + "undefined and unexpected behavior. Please use KotlinJsonAdapter from the "
             + "moshi-kotlin artifact or use code gen from the moshi-kotlin-codegen artifact.");
       }
-      */
+      *///------------------INFOTECH CHANGED END-------------------------
       ClassFactory<Object> classFactory = ClassFactory.get(rawType);
       Map<String, FieldBinding<?>> fields = new TreeMap<>();
       for (Type t = type; t != Object.class; t = Types.getGenericSuperclass(t)) {
