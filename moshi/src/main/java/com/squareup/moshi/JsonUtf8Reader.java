@@ -887,7 +887,7 @@ public final class JsonUtf8Reader extends JsonReader {
 
       if (buffer.getByte(index) == '\\') {
         sink.write(buffer, index + 1);
-        readEscapeCharacter();
+        readEscapeCharacter(sink);
       } else {
         sink.write(buffer, index + 1);
         return;
@@ -1133,11 +1133,16 @@ public final class JsonUtf8Reader extends JsonReader {
    * @throws IOException if any unicode escape sequences are malformed.
    */
   private char readEscapeCharacter() throws IOException {
+    return readEscapeCharacter(BLACKHOLE);
+  }
+
+  private char readEscapeCharacter(Sink sink) throws IOException {
     if (!source.request(1)) {
       throw syntaxError("Unterminated escape sequence");
     }
 
-    byte escaped = buffer.readByte();
+    byte escaped = buffer.getByte(0);
+    sink.write(buffer, 1);
     switch (escaped) {
       case 'u':
         if (!source.request(4)) {
@@ -1158,7 +1163,7 @@ public final class JsonUtf8Reader extends JsonReader {
             throw syntaxError("\\u" + buffer.readUtf8(4));
           }
         }
-        buffer.skip(4);
+        sink.write(buffer, 4);
         return result;
 
       case 't':
