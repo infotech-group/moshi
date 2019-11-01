@@ -17,7 +17,7 @@ class StreamingTest {
 
   private fun testSpecialCharacter(value: String) {
     val input = """{"a":"$value"}"""
-    val reader  = JsonUtf8Reader.of(input.byteInputStream().run(Okio::source).run(Okio::buffer))
+    val reader  = readerOf(input)
     val out = Buffer()
     val writer = JsonUtf8Writer.of(out)
 
@@ -38,4 +38,21 @@ class StreamingTest {
 
     Assert.assertEquals(input, streamed)
   }
+
+  @Test
+  fun unescape() {
+    val value = "a\\\"c\\\""
+    val valueQuotedUnescaped = """"a"c"""""
+    val input = """{"a":"$value"}"""
+    val reader  = readerOf(input)
+    val out = Buffer()
+
+    reader.beginObject()
+    reader.skipName()
+    reader.streamDoubleQuotedStringUnescape(out)
+
+    Assert.assertEquals(valueQuotedUnescaped, out.readUtf8())
+  }
+
+  private fun readerOf(value: String) = JsonUtf8Reader.of(value.byteInputStream().run(Okio::source).run(Okio::buffer))
 }

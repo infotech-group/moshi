@@ -1208,22 +1208,33 @@ public final class JsonUtf8Reader extends JsonReader {
     return new JsonUtf8Reader(source);
   }
 
+  public static int peekOther  = 0;
+  public static int peekNull   = 1;
+  public static int peekString = 2;
+
   /**
-   * _Idempotent_ function that peeks next value for null without consuming input
-   * Used in conjunction with streamValue() to skip NULL values without consuming internal buffer.
-   *
-   * @return whether the next JSON _value_ is null/NULL
+   * _Idempotent_ function that peeks next value without consuming input.
+   * Used in conjunction with streamXXXX() methods.
    */
-  public boolean nextValueIsNullDryRun() throws IOException {
+  public int peekDryRun() throws IOException {
     int p = 0;
     while (source.request(p + 1)) {
       int c = buffer.getByte(p++);
       if (c == ':' || c == ',' || c == '\n' || c == ' ' || c == '\r' || c == '\t') {
         continue;
       }
-      return c == 'n' || c == 'N';
+      switch (c) {
+        case '\"': return peekString;
+        case 'n' :
+        case 'N' : return peekNull;
+        default  : return peekOther;
+      }
     }
     throw new EOFException("End of input");
+  }
+
+  public boolean nextValueIsNullDryRun() throws IOException {
+    return peekDryRun() == peekNull;
   }
 
   public void streamValue(JsonUtf8Writer writer) throws IOException {
@@ -1237,5 +1248,128 @@ public final class JsonUtf8Reader extends JsonReader {
     pathIndices[stackSize - 1]++;
     pathNames[stackSize - 1] = "null";
   }
+
+  public void streamDoubleQuotedStringUnescape(BufferedSink writer) throws IOException {
+    readDoubleQuotedStringUnescape(writer);
+
+    pathIndices[stackSize - 1]++;
+    pathNames[stackSize - 1] = "null";
+  }
+
+  /**
+   * Optimized readValue that expects next value to be a string,
+   * writes it into provided sink while keeps quotes and unescapes escaped characters.
+   * @throws JsonDataException if the next json token is not a string value
+   */
+  private void readDoubleQuotedStringUnescape(BufferedSink sink) throws IOException {
+    int p = peeked;
+    if (p == PEEKED_NONE) {
+      p = doPeek(BLACKHOLE, false);
+    }
+
+    if (p != PEEKED_DOUBLE_QUOTED) {
+      Buffer buffer = new Buffer();
+      streamValue(buffer);
+      throw new JsonDataException("Expected a quoted value but was " + buffer.readUtf8()
+        + " at path " + getPath());
+    }
+
+    sink.writeByte('\"'); //'"' is consumed by doPeek(), write it ourselves
+    skipDoubleQuotedValueUnescape(sink);
+    peeked = PEEKED_NONE;
+  }
+
+  /**
+   * Same as skipQuotedValue, but writes escaped value to sink.
+   */
+  private void skipDoubleQuotedValueUnescape(BufferedSink sink) throws IOException {
+    while (true) {
+      long index = source.indexOfElement(DOUBLE_QUOTE_OR_SLASH);
+      if (index == -1L) throw syntaxError("Unterminated string");
+
+      if (buffer.getByte(index) == '\\') {
+        sink.write(buffer, index);
+        writeEscapeCharacter(sink);
+      } else {
+        sink.write(buffer, index + 1);
+        return;
+      }
+    }
+  }
+
+  private void writeEscapeCharacter(BufferedSink sink) throws IOException {
+    if (!source.request(1)) {
+      throw syntaxError("Unterminated escape sequence");
+    }
+
+    buffer.skip(1); //'\'
+    byte escaped = buffer.readByte();
+    switch (escaped) {
+      case 'u':
+        //jvm...
+        char char1 = getUnicodeCodePoint(buffer, 0);
+        if (Character.isSurrogate(char1)) {
+          char char2 = getUnicodeCodePoint(buffer, 4 + 2);
+
+          if (!Character.isSurrogate(char2)) {
+            throw syntaxError("\\u" + buffer.readUtf8(10));
+          }
+
+          char[] chars = {char1, char2};
+          sink.writeUtf8(String.valueOf(chars));
+          buffer.skip(10);
+        } else {
+          sink.writeByte(char1);
+          buffer.skip(4);
+        }
+      case 't':
+        sink.writeByte('\t');
+        return;
+      case 'b':
+        sink.writeByte('\b');
+        return;
+      case 'n':
+        sink.writeByte('\n');
+        return;
+      case 'r':
+        sink.writeByte('\r');
+        return;
+      case 'f':
+        sink.writeByte('\f');
+        return;
+      case '\n':
+      case '\'':
+      case '"':
+      case '\\':
+      case '/':
+        sink.writeByte(escaped);
+        return;
+      default:
+        if (!lenient) throw syntaxError("Invalid escape sequence: \\" + (char) escaped);
+        sink.writeByte(escaped);
+    }
+  }
+
+  private char getUnicodeCodePoint(Buffer buffer, int offset) throws IOException {
+    if (!source.request(offset + 4)) {
+      throw new EOFException("Unterminated escape sequence at path " + getPath());
+    }
+    char result = 0;
+    for (int i = offset, end = i + 4; i < end; i++) {
+      byte c = buffer.getByte(i);
+      result <<= 4;
+      if (c >= '0' && c <= '9') {
+        result += (c - '0');
+      } else if (c >= 'a' && c <= 'f') {
+        result += (c - 'a' + 10);
+      } else if (c >= 'A' && c <= 'F') {
+        result += (c - 'A' + 10);
+      } else {
+        throw syntaxError("\\u" + buffer.readUtf8(4));
+      }
+    }
+    return result;
+  }
+
   //------------------INFOTECH CHANGED END-------------------------
 }
