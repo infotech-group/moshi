@@ -1298,7 +1298,7 @@ public final class JsonUtf8Reader extends JsonReader {
   }
 
   private void writeEscapeCharacter(BufferedSink sink) throws IOException {
-    if (!source.request(1)) {
+    if (!source.request(2)) {
       throw syntaxError("Unterminated escape sequence");
     }
 
