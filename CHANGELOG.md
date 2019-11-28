@@ -1,6 +1,27 @@
 Change Log
 ==========
 
+## Version 1.9.2
+
+_2019-11-17_
+
+ * Fix: Generate correct adapters for several special cases including reified inline types, public
+   classes enclosed in internal classes, deprecated types with `-Werror`, primitives in type
+   parameters, nullables in type parameters, and type aliases in type parameters.
+
+
+## Version 1.9.1
+
+_2019-10-30_
+
+ * Fix: "abstract function ... cannot have code" code gen crash when parsing Kotlin metadata.
+ * Fix: Generate code to support constructors with more than 32 parameters. The 1.9.0 release had
+   a regression where classes with 33+ parameters would crash upon decoding.
+ * Fix: Generate code to support more constructor cases, such as classes with non-property
+   parameters and classes with multiple constructors.
+ * Fix: Generate code to handle type aliases in type parameters.
+
+
 ## Version 1.9.0
 
 _2019-10-29_
