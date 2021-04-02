@@ -2,6 +2,8 @@ package com.squareup.moshi
 
 import okio.Buffer
 import okio.Okio
+import okio.buffer
+import okio.source
 import org.junit.Assert
 import org.junit.Test
 
@@ -54,5 +56,5 @@ class StreamingTest {
     Assert.assertEquals(valueQuotedUnescaped, out.readUtf8())
   }
 
-  private fun readerOf(value: String) = JsonUtf8Reader.of(value.byteInputStream().run(Okio::source).run(Okio::buffer))
+  private fun readerOf(value: String) = JsonUtf8Reader.of(value.byteInputStream().source().buffer())
 }
