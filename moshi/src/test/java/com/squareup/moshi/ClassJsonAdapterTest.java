@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 package com.squareup.moshi;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.squareup.moshi.TestUtil.newReader;
+import static com.squareup.moshi.internal.Util.NO_ANNOTATIONS;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,11 +29,6 @@ import java.util.SimpleTimeZone;
 import okio.Buffer;
 import org.junit.Test;
 
-import static com.squareup.moshi.TestUtil.newReader;
-import static com.squareup.moshi.internal.Util.NO_ANNOTATIONS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
-
 public final class ClassJsonAdapterTest {
   private final Moshi moshi = new Moshi.Builder().build();
 
@@ -37,7 +37,8 @@ public final class ClassJsonAdapterTest {
     boolean extraCheese;
   }
 
-  @Test public void basicClassAdapter() throws Exception {
+  @Test
+  public void basicClassAdapter() throws Exception {
     BasicPizza value = new BasicPizza();
     value.diameter = 13;
     value.extraCheese = true;
@@ -53,14 +54,15 @@ public final class ClassJsonAdapterTest {
     private String secretIngredient;
   }
 
-  @Test public void privateFields() throws Exception {
+  @Test
+  public void privateFields() throws Exception {
     PrivateFieldsPizza value = new PrivateFieldsPizza();
     value.secretIngredient = "vodka";
     String toJson = toJson(PrivateFieldsPizza.class, value);
     assertThat(toJson).isEqualTo("{\"secretIngredient\":\"vodka\"}");
 
-    PrivateFieldsPizza fromJson = fromJson(
-        PrivateFieldsPizza.class, "{\"secretIngredient\":\"vodka\"}");
+    PrivateFieldsPizza fromJson =
+        fromJson(PrivateFieldsPizza.class, "{\"secretIngredient\":\"vodka\"}");
     assertThat(fromJson.secretIngredient).isEqualTo("vodka");
   }
 
@@ -72,7 +74,8 @@ public final class ClassJsonAdapterTest {
     boolean chocolate;
   }
 
-  @Test public void typeHierarchy() throws Exception {
+  @Test
+  public void typeHierarchy() throws Exception {
     DessertPizza value = new DessertPizza();
     value.diameter = 13;
     value.chocolate = true;
@@ -95,7 +98,8 @@ public final class ClassJsonAdapterTest {
     int e;
   }
 
-  @Test public void fieldsAreAlphabeticalAcrossFlattenedHierarchy() throws Exception {
+  @Test
+  public void fieldsAreAlphabeticalAcrossFlattenedHierarchy() throws Exception {
     ExtendsBaseAbcde value = new ExtendsBaseAbcde();
     value.a = 4;
     value.b = 5;
@@ -105,8 +109,8 @@ public final class ClassJsonAdapterTest {
     String toJson = toJson(ExtendsBaseAbcde.class, value);
     assertThat(toJson).isEqualTo("{\"a\":4,\"b\":5,\"c\":6,\"d\":7,\"e\":8}");
 
-    ExtendsBaseAbcde fromJson = fromJson(
-        ExtendsBaseAbcde.class, "{\"a\":4,\"b\":5,\"c\":6,\"d\":7,\"e\":8}");
+    ExtendsBaseAbcde fromJson =
+        fromJson(ExtendsBaseAbcde.class, "{\"a\":4,\"b\":5,\"c\":6,\"d\":7,\"e\":8}");
     assertThat(fromJson.a).isEqualTo(4);
     assertThat(fromJson.b).isEqualTo(5);
     assertThat(fromJson.c).isEqualTo(6);
@@ -119,7 +123,8 @@ public final class ClassJsonAdapterTest {
     int b;
   }
 
-  @Test public void staticFieldsOmitted() throws Exception {
+  @Test
+  public void staticFieldsOmitted() throws Exception {
     StaticFields value = new StaticFields();
     value.b = 12;
     String toJson = toJson(StaticFields.class, value);
@@ -135,7 +140,8 @@ public final class ClassJsonAdapterTest {
     int b;
   }
 
-  @Test public void transientFieldsOmitted() throws Exception {
+  @Test
+  public void transientFieldsOmitted() throws Exception {
     TransientFields value = new TransientFields();
     value.a = 11;
     value.b = 12;
@@ -155,30 +161,40 @@ public final class ClassJsonAdapterTest {
     int a;
   }
 
-  @Test public void fieldNameCollision() throws Exception {
+  @Test
+  public void fieldNameCollision() throws Exception {
     try {
       ClassJsonAdapter.FACTORY.create(ExtendsBaseA.class, NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Conflicting fields:\n"
-          + "    int com.squareup.moshi.ClassJsonAdapterTest$ExtendsBaseA.a\n"
-          + "    int com.squareup.moshi.ClassJsonAdapterTest$BaseA.a");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "Conflicting fields:\n"
+                  + "    int com.squareup.moshi.ClassJsonAdapterTest$ExtendsBaseA.a\n"
+                  + "    int com.squareup.moshi.ClassJsonAdapterTest$BaseA.a");
     }
   }
 
   static class NameCollision {
     String foo;
-    @Json(name = "foo") String bar;
+
+    @Json(name = "foo")
+    String bar;
   }
 
-  @Test public void jsonAnnotationNameCollision() throws Exception {
+  @Test
+  public void jsonAnnotationNameCollision() throws Exception {
     try {
       ClassJsonAdapter.FACTORY.create(NameCollision.class, NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Conflicting fields:\n"
-          + "    java.lang.String com.squareup.moshi.ClassJsonAdapterTest$NameCollision.foo\n"
-          + "    java.lang.String com.squareup.moshi.ClassJsonAdapterTest$NameCollision.bar");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "Conflicting fields:\n"
+                  + "    java.lang.String com.squareup.moshi.ClassJsonAdapterTest$NameCollision.foo\n"
+                  + "    java.lang.String com.squareup.moshi.ClassJsonAdapterTest$NameCollision.bar");
     }
   }
 
@@ -190,7 +206,8 @@ public final class ClassJsonAdapterTest {
     int a;
   }
 
-  @Test public void fieldNameCollisionWithTransientFieldIsOkay() throws Exception {
+  @Test
+  public void fieldNameCollisionWithTransientFieldIsOkay() throws Exception {
     ExtendsTransientBaseA value = new ExtendsTransientBaseA();
     value.a = 11;
     ((TransientBaseA) value).a = 12;
@@ -211,7 +228,8 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void noArgConstructor() throws Exception {
+  @Test
+  public void noArgConstructor() throws Exception {
     NoArgConstructor fromJson = fromJson(NoArgConstructor.class, "{\"b\":8}");
     assertThat(fromJson.a).isEqualTo(5);
     assertThat(fromJson.b).isEqualTo(8);
@@ -223,12 +241,13 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void noArgConstructorThrowsCheckedException() throws Exception {
+  @Test
+  public void noArgConstructorThrowsCheckedException() throws Exception {
     try {
       fromJson(NoArgConstructorThrowsCheckedException.class, "{}");
       fail();
     } catch (RuntimeException expected) {
-      assertThat(expected.getCause()).hasMessage("foo");
+      assertThat(expected.getCause()).hasMessageThat().isEqualTo("foo");
     }
   }
 
@@ -238,12 +257,13 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void noArgConstructorThrowsUncheckedException() throws Exception {
+  @Test
+  public void noArgConstructorThrowsUncheckedException() throws Exception {
     try {
       fromJson(NoArgConstructorThrowsUncheckedException.class, "{}");
       fail();
     } catch (UnsupportedOperationException expected) {
-      assertThat(expected).hasMessage("foo");
+      assertThat(expected).hasMessageThat().isEqualTo("foo");
     }
   }
 
@@ -252,9 +272,10 @@ public final class ClassJsonAdapterTest {
     int b;
   }
 
-  @Test public void noArgConstructorFieldDefaultsHonored() throws Exception {
-    NoArgConstructorWithDefaultField fromJson = fromJson(
-        NoArgConstructorWithDefaultField.class, "{\"b\":8}");
+  @Test
+  public void noArgConstructorFieldDefaultsHonored() throws Exception {
+    NoArgConstructorWithDefaultField fromJson =
+        fromJson(NoArgConstructorWithDefaultField.class, "{\"b\":8}");
     assertThat(fromJson.a).isEqualTo(5);
     assertThat(fromJson.b).isEqualTo(8);
   }
@@ -267,7 +288,8 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void magicConstructor() throws Exception {
+  @Test
+  public void magicConstructor() throws Exception {
     MagicConstructor fromJson = fromJson(MagicConstructor.class, "{\"a\":8}");
     assertThat(fromJson.a).isEqualTo(8);
   }
@@ -281,9 +303,10 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void magicConstructorFieldDefaultsNotHonored() throws Exception {
-    MagicConstructorWithDefaultField fromJson = fromJson(
-        MagicConstructorWithDefaultField.class, "{\"b\":3}");
+  @Test
+  public void magicConstructorFieldDefaultsNotHonored() throws Exception {
+    MagicConstructorWithDefaultField fromJson =
+        fromJson(MagicConstructorWithDefaultField.class, "{\"b\":3}");
     assertThat(fromJson.a).isEqualTo(0); // Surprising! No value is assigned.
     assertThat(fromJson.b).isEqualTo(3);
   }
@@ -292,7 +315,8 @@ public final class ClassJsonAdapterTest {
     int a;
   }
 
-  @Test public void nullRootObject() throws Exception {
+  @Test
+  public void nullRootObject() throws Exception {
     String toJson = toJson(PrivateFieldsPizza.class, null);
     assertThat(toJson).isEqualTo("null");
 
@@ -304,7 +328,8 @@ public final class ClassJsonAdapterTest {
     String a = "not null";
   }
 
-  @Test public void nullFieldValues() throws Exception {
+  @Test
+  public void nullFieldValues() throws Exception {
     NullFieldValue value = new NullFieldValue();
     value.a = null;
     String toJson = toJson(NullFieldValue.class, value);
@@ -314,62 +339,75 @@ public final class ClassJsonAdapterTest {
     assertThat(fromJson.a).isNull();
   }
 
-  class NonStatic {
-  }
+  class NonStatic {}
 
-  @Test public void nonStaticNestedClassNotSupported() throws Exception {
+  @Test
+  public void nonStaticNestedClassNotSupported() throws Exception {
     try {
       ClassJsonAdapter.FACTORY.create(NonStatic.class, NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Cannot serialize non-static nested class "
-          + "com.squareup.moshi.ClassJsonAdapterTest$NonStatic");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "Cannot serialize non-static nested class "
+                  + "com.squareup.moshi.ClassJsonAdapterTest$NonStatic");
     }
   }
 
-  @Test public void anonymousClassNotSupported() throws Exception {
-    Comparator<Object> c = new Comparator<Object>() {
-      @Override public int compare(Object a, Object b) {
-        return 0;
-      }
-    };
+  @Test
+  public void anonymousClassNotSupported() throws Exception {
+    Comparator<Object> c =
+        new Comparator<Object>() {
+          @Override
+          public int compare(Object a, Object b) {
+            return 0;
+          }
+        };
     try {
       ClassJsonAdapter.FACTORY.create(c.getClass(), NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Cannot serialize anonymous class " + c.getClass().getName());
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Cannot serialize anonymous class " + c.getClass().getName());
     }
   }
 
-  @Test public void localClassNotSupported() throws Exception {
-    class Local {
-    }
+  @Test
+  public void localClassNotSupported() throws Exception {
+    class Local {}
     try {
       ClassJsonAdapter.FACTORY.create(Local.class, NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Cannot serialize local class "
-          + "com.squareup.moshi.ClassJsonAdapterTest$1Local");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "Cannot serialize local class " + "com.squareup.moshi.ClassJsonAdapterTest$1Local");
     }
   }
 
-  interface Interface {
-  }
+  interface Interface {}
 
-  @Test public void interfaceNotSupported() throws Exception {
+  @Test
+  public void interfaceNotSupported() throws Exception {
     assertThat(ClassJsonAdapter.FACTORY.create(Interface.class, NO_ANNOTATIONS, moshi)).isNull();
   }
 
-  static abstract class Abstract {
-  }
+  abstract static class Abstract {}
 
-  @Test public void abstractClassNotSupported() throws Exception {
+  @Test
+  public void abstractClassNotSupported() throws Exception {
     try {
       ClassJsonAdapter.FACTORY.create(Abstract.class, NO_ANNOTATIONS, moshi);
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessage("Cannot serialize abstract class "
-          + "com.squareup.moshi.ClassJsonAdapterTest$Abstract");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "Cannot serialize abstract class "
+                  + "com.squareup.moshi.ClassJsonAdapterTest$Abstract");
     }
   }
 
@@ -381,14 +419,15 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void platformSuperclassPrivateFieldIsExcluded() throws Exception {
+  @Test
+  public void platformSuperclassPrivateFieldIsExcluded() throws Exception {
     ExtendsPlatformClassWithPrivateField value = new ExtendsPlatformClassWithPrivateField();
     value.a = 4;
     String toJson = toJson(ExtendsPlatformClassWithPrivateField.class, value);
     assertThat(toJson).isEqualTo("{\"a\":4}");
 
-    ExtendsPlatformClassWithPrivateField fromJson = fromJson(
-        ExtendsPlatformClassWithPrivateField.class, "{\"a\":4,\"ID\":\"BAR\"}");
+    ExtendsPlatformClassWithPrivateField fromJson =
+        fromJson(ExtendsPlatformClassWithPrivateField.class, "{\"a\":4,\"ID\":\"BAR\"}");
     assertThat(fromJson.a).isEqualTo(4);
     assertThat(fromJson.getID()).isEqualTo("FOO");
   }
@@ -401,7 +440,8 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void platformSuperclassProtectedFieldIsIncluded() throws Exception {
+  @Test
+  public void platformSuperclassProtectedFieldIsIncluded() throws Exception {
     ExtendsPlatformClassWithProtectedField value = new ExtendsPlatformClassWithProtectedField();
     value.a = 4;
     value.write(5);
@@ -409,36 +449,48 @@ public final class ClassJsonAdapterTest {
     String toJson = toJson(ExtendsPlatformClassWithProtectedField.class, value);
     assertThat(toJson).isEqualTo("{\"a\":4,\"buf\":[5,6],\"count\":2}");
 
-    ExtendsPlatformClassWithProtectedField fromJson = fromJson(
-        ExtendsPlatformClassWithProtectedField.class, "{\"a\":4,\"buf\":[5,6],\"count\":2}");
+    ExtendsPlatformClassWithProtectedField fromJson =
+        fromJson(
+            ExtendsPlatformClassWithProtectedField.class, "{\"a\":4,\"buf\":[5,6],\"count\":2}");
     assertThat(fromJson.a).isEqualTo(4);
-    assertThat(fromJson.toByteArray()).contains((byte) 5, (byte) 6);
+    assertThat(fromJson.toByteArray()).asList().containsExactly((byte) 5, (byte) 6).inOrder();
   }
 
   static class NamedFields {
-    @Json(name = "#") List<String> phoneNumbers;
-    @Json(name = "@") String emailAddress;
-    @Json(name = "zip code") String zipCode;
+    @Json(name = "#")
+    List<String> phoneNumbers;
+
+    @Json(name = "@")
+    String emailAddress;
+
+    @Json(name = "zip code")
+    String zipCode;
   }
 
-  @Test public void jsonAnnotationHonored() throws Exception {
+  @Test
+  public void jsonAnnotationHonored() throws Exception {
     NamedFields value = new NamedFields();
     value.phoneNumbers = Arrays.asList("8005553333", "8005554444");
     value.emailAddress = "cash@square.com";
     value.zipCode = "94043";
 
     String toJson = toJson(NamedFields.class, value);
-    assertThat(toJson).isEqualTo("{"
-        + "\"#\":[\"8005553333\",\"8005554444\"],"
-        + "\"@\":\"cash@square.com\","
-        + "\"zip code\":\"94043\""
-        + "}");
+    assertThat(toJson)
+        .isEqualTo(
+            "{"
+                + "\"#\":[\"8005553333\",\"8005554444\"],"
+                + "\"@\":\"cash@square.com\","
+                + "\"zip code\":\"94043\""
+                + "}");
 
-    NamedFields fromJson = fromJson(NamedFields.class, "{"
-        + "\"#\":[\"8005553333\",\"8005554444\"],"
-        + "\"@\":\"cash@square.com\","
-        + "\"zip code\":\"94043\""
-        + "}");
+    NamedFields fromJson =
+        fromJson(
+            NamedFields.class,
+            "{"
+                + "\"#\":[\"8005553333\",\"8005554444\"],"
+                + "\"@\":\"cash@square.com\","
+                + "\"zip code\":\"94043\""
+                + "}");
     assertThat(fromJson.phoneNumbers).isEqualTo(Arrays.asList("8005553333", "8005554444"));
     assertThat(fromJson.emailAddress).isEqualTo("cash@square.com");
     assertThat(fromJson.zipCode).isEqualTo("94043");
@@ -452,19 +504,24 @@ public final class ClassJsonAdapterTest {
     }
   }
 
-  @Test public void parameterizedType() throws Exception {
+  @Test
+  public void parameterizedType() throws Exception {
     @SuppressWarnings("unchecked")
-    JsonAdapter<Box<Integer>> adapter = (JsonAdapter<Box<Integer>>) ClassJsonAdapter.FACTORY.create(
-        Types.newParameterizedTypeWithOwner(ClassJsonAdapterTest.class, Box.class, Integer.class),
-        NO_ANNOTATIONS, moshi);
+    JsonAdapter<Box<Integer>> adapter =
+        (JsonAdapter<Box<Integer>>)
+            ClassJsonAdapter.FACTORY.create(
+                Types.newParameterizedTypeWithOwner(
+                    ClassJsonAdapterTest.class, Box.class, Integer.class),
+                NO_ANNOTATIONS,
+                moshi);
     assertThat(adapter.fromJson("{\"data\":5}").data).isEqualTo(5);
     assertThat(adapter.toJson(new Box<>(5))).isEqualTo("{\"data\":5}");
   }
 
   private <T> String toJson(Class<T> type, T value) throws IOException {
     @SuppressWarnings("unchecked") // Factory.create returns an adapter that matches its argument.
-        JsonAdapter<T> jsonAdapter = (JsonAdapter<T>) ClassJsonAdapter.FACTORY.create(
-        type, NO_ANNOTATIONS, moshi);
+    JsonAdapter<T> jsonAdapter =
+        (JsonAdapter<T>) ClassJsonAdapter.FACTORY.create(type, NO_ANNOTATIONS, moshi);
 
     // Wrap in an array to avoid top-level object warnings without going completely lenient.
     Buffer buffer = new Buffer();
@@ -481,8 +538,8 @@ public final class ClassJsonAdapterTest {
 
   private <T> T fromJson(Class<T> type, String json) throws IOException {
     @SuppressWarnings("unchecked") // Factory.create returns an adapter that matches its argument.
-        JsonAdapter<T> jsonAdapter = (JsonAdapter<T>) ClassJsonAdapter.FACTORY.create(
-        type, NO_ANNOTATIONS, moshi);
+    JsonAdapter<T> jsonAdapter =
+        (JsonAdapter<T>) ClassJsonAdapter.FACTORY.create(type, NO_ANNOTATIONS, moshi);
     // Wrap in an array to avoid top-level object warnings without going completely lenient.
     JsonReader jsonReader = newReader("[" + json + "]");
     jsonReader.beginArray();

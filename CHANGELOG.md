@@ -1,6 +1,105 @@
 Change Log
 ==========
 
+## Version 1.12.0
+
+_2021-04-01_
+
+ * New: Improve generated code performance when all properties are set.
+ * Fix: Don't crash on a missing type element like `@SuppressLint`.
+ * Fix: Update the JVM metadata library to avoid problems on Kotlin 1.5.0-M2.
+ * Fix: Support generic arrays with defaults in generated adapters.
+ * Fix: Don't generate code with simple name collisions.
+ * Upgrade: [Okio 2.10.0][okio_2_10_0].
+ * Upgrade: [Kotlin 1.4.31][kotlin_1_4_31].
+
+## Version 1.11.0
+
+_2020-10-04_
+
+ * New: Kotlin extension functions and properties. Use of these extensions is only possible from
+   Kotlin, and requires the Kotlin stdlib dependency. This release does not have any Kotlin
+   requirement and can be used Kotlin-free from Java.
+
+    ```kotlin
+    /** Extension alternative to [Types.nextAnnotations()]. */
+    fun <reified T : Annotation> Set<Annotation>.nextAnnotations(): Set<Annotation>?
+
+    /** Extension alternative to [Types.getRawType()]. */
+    val Type.rawType: Class<*>
+
+    /** Extension alternative to [Types.arrayOf()]. */
+    fun KClass<*>.asArrayType(): GenericArrayType
+
+    /** Extension alternative to [Types.arrayOf()]. */
+    fun Type.asArrayType(): GenericArrayType
+    ```
+
+ * New: Experimental Kotlin extensions. These depend on unreleased APIs and may break in a future
+   release of Kotlin. If you are comfortable with this, add `@ExperimentalStdlibApi` at the callsite
+   or add this argument to your Kotlin compiler: `"-Xopt-in=kotlin.ExperimentalStdlibApi"`.
+
+    ```kotlin
+    /** Returns the adapter for [T]. */
+    inline fun <reified T> Moshi.adapter(): JsonAdapter<T>
+
+    /** Returns the adapter for [ktype]. */
+    fun <T> Moshi.adapter(ktype: KType): JsonAdapter<T>
+
+    /** Adds an adapter for [T]. */
+    inline fun <reified T> Moshi.Builder.addAdapter(adapter: JsonAdapter<T>): Moshi.Builder
+
+    /** Extension alternative to [Types.arrayOf()]. */
+    fun KType.asArrayType(): GenericArrayType
+
+    /** Extension alternative to [Types.subtypeOf()]. */
+    inline fun <reified T> subtypeOf(): WildcardType
+
+    /** Extension alternative to [Types.supertypeOf()]. */
+    inline fun <reified T> supertypeOf(): WildcardType
+    ```
+
+ * New: `JsonReader.nextSource()`. This returns an Okio `BufferedSource` that streams the UTF-8
+   bytes of a JSON value. Use this to accept JSON values without decoding them, to delegate to
+   another JSON processor, or for streaming access to very large embedded values.
+ * New: `Moshi.Builder.addLast()`. Use this when installing widely-applicable adapter factories like
+   `KotlinJsonAdapterFactory`. Adapters registered with `add()` are preferred (in the order they
+   were added), followed by all adapters registered with `addLast()` (also in the order they were
+   added). This precedence is retained when `Moshi.newBuilder()` is used.
+ * New: `setTag()`, `tag()` methods on `JsonReader` and `JsonWriter`. Use these as a side-channel
+   between adapters and their uses. For example, a tag may be used to track use of unexpected
+   data in a custom adapter.
+ * Fix: Don't crash with a `StackOverflowError` decoding backward-referencing type variables in
+   Kotlin. This caused problems for parameterized types like `MyInterface<E : Enum<E>>`.
+ * Upgrade: [Okio 1.17.5][okio_1_7_5].
+ * Upgrade: [Kotlin 1.4.10][kotlin_1_4_10].
+
+## Version 1.10.0
+
+_2020-08-26_
+
+ * New: Upgrade to Kotlin 1.4.0.
+ * New: `JsonReader.promoteNameToValue()` makes it easier to build custom `Map` adapters.
+ * New: `Options.strings()`.
+ * New: `PolymorphicJsonAdapterFactory.withFallbackJsonAdapter()` makes it possible to handle
+   unrecognized types when encoding and decoding.
+ * New: Add `JsonWriter.jsonValue` API
+ * New: Code gen now generates precise proguard rules on-the-fly.
+ * New: Improve error when incorrectly trying to use a collection class like `ArrayList` instead of `List`
+ * Fix: Prevent R8 from keeping all `@Metadata` annotations
+ * Fix: Avoid VerifyErrors on Android 4.4 devices when using R8
+ * Fix: Fix resolution of types in superclass settable properties
+
+## Version 1.9.3
+
+_2020-06-11_
+
+ * Fix: Tweak a shrinker rule to mitigate an R8 bug which was causing classes unrelated to the Kotlin adpater code generation to be retained.
+ * Fix: Ensure that the Kotlin adapter code generation does not line wrap in the middle of a string if your JSON keys contain spaces.
+ * Fix: Strip type annotations before emitting type references like `Foo::class` in the Kotlin adapter code generation.
+ * Fix: Separate the runtime check for Kotlin's `DefaultConstructorMarker` from the check for `Metadata`. A shrinker may have removed `Metadata` and we should still check for `DefaultConstructorMarker`.
+
+
 ## Version 1.9.2
 
 _2019-11-17_
@@ -26,22 +125,22 @@ _2019-10-30_
 
 _2019-10-29_
 
- * **This release requires kotlin-reflect or moshi-kotlin-codegen for all Kotlin classes.** 
- 
+ * **This release requires kotlin-reflect or moshi-kotlin-codegen for all Kotlin classes.**
+
    Previously Moshi wouldn't differentiate between Kotlin classes and Java classes if Kotlin was
    not configured. This caused bad runtime behavior such as putting null into non-nullable fields!
    If you attempt to create an adapter for a Kotlin type, Moshi will throw an
    `IllegalArgumentException`.
-   
+
    Fix this with either the reflection adapter:
-   
+
    ```kotlin
    val moshi = Moshi.Builder()
        // ... add your own JsonAdapters and factories ...
        .add(KotlinJsonAdapterFactory())
        .build()
    ```
-   
+
    Or the codegen annotation processor:
 
    ```kotlin
@@ -51,12 +150,12 @@ _2019-10-29_
            val visible_cards: List<Card>
    )
    ```
-   
+
    The [Kotlin documentation][moshi_kotlin_docs] explains the required build configuration changes.
 
- * New: Change how Moshi's generated adapters call constructors. Previous generated code used a 
+ * New: Change how Moshi's generated adapters call constructors. Previous generated code used a
    combination of the constructor and `copy()` method to set properties that have default values.
-   With this update we call the same synthetic constructor that Kotlin uses. This is less surprising 
+   With this update we call the same synthetic constructor that Kotlin uses. This is less surprising
    though it requires us to generate some tricky code.
  * New: Make `Rfc3339DateJsonAdapter` null-safe. Previously Moshi would refuse to decode null dates.
    Restore that behavior by explicitly forbidding nulls with `Rfc3339DateJsonAdapter().nonNull()`.
@@ -392,8 +491,12 @@ _2015-06-16_
 
 
  [dates_example]: https://github.com/square/moshi/blob/master/examples/src/main/java/com/squareup/moshi/recipes/ReadAndWriteRfc3339Dates.java
- [rfc_7159]: https://tools.ietf.org/html/rfc7159
  [gson]: https://github.com/google/gson
  [jackson]: http://wiki.fasterxml.com/JacksonHome
+ [kotlin_1_4_10]: https://github.com/JetBrains/kotlin/releases/tag/v1.4.10
+ [kotlin_1_4_31]: https://github.com/JetBrains/kotlin/releases/tag/v1.4.31
  [maven_provided]: https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html
  [moshi_kotlin_docs]: https://github.com/square/moshi/blob/master/README.md#kotlin
+ [okio_1_7_5]: https://square.github.io/okio/changelog/#version-1175
+ [okio_2_10_0]: https://square.github.io/okio/changelog/#version-2100
+ [rfc_7159]: https://tools.ietf.org/html/rfc7159

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,8 @@ package com.squareup.moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 @Deprecated(
-        message = "this moved to avoid a package name conflict in the Java Platform Module System.",
-        replaceWith = ReplaceWith("com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory")
+  message = "this moved to avoid a package name conflict in the Java Platform Module System.",
+  replaceWith = ReplaceWith("com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory")
 )
-class KotlinJsonAdapterFactory
-    : JsonAdapter.Factory by KotlinJsonAdapterFactory()
+public class KotlinJsonAdapterFactory :
+  JsonAdapter.Factory by KotlinJsonAdapterFactory()

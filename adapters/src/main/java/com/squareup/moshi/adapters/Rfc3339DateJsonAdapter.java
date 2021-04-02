@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,15 +26,15 @@ import java.util.Date;
  * formatted like {@code 2015-09-26T18:23:50.250Z}. This adapter is null-safe. To use, add this as
  * an adapter for {@code Date.class} on your {@link com.squareup.moshi.Moshi.Builder Moshi.Builder}:
  *
- * <pre> {@code
- *
- *   Moshi moshi = new Moshi.Builder()
- *       .add(Date.class, new Rfc3339DateJsonAdapter())
- *       .build();
+ * <pre>{@code
+ * Moshi moshi = new Moshi.Builder()
+ *     .add(Date.class, new Rfc3339DateJsonAdapter())
+ *     .build();
  * }</pre>
  */
 public final class Rfc3339DateJsonAdapter extends JsonAdapter<Date> {
-  @Override public synchronized Date fromJson(JsonReader reader) throws IOException {
+  @Override
+  public synchronized Date fromJson(JsonReader reader) throws IOException {
     if (reader.peek() == JsonReader.Token.NULL) {
       return reader.nextNull();
     }
@@ -42,7 +42,8 @@ public final class Rfc3339DateJsonAdapter extends JsonAdapter<Date> {
     return Iso8601Utils.parse(string);
   }
 
-  @Override public synchronized void toJson(JsonWriter writer, Date value) throws IOException {
+  @Override
+  public synchronized void toJson(JsonWriter writer, Date value) throws IOException {
     if (value == null) {
       writer.nullValue();
     } else {

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,11 +25,12 @@ public final class RecoverFromTypeMismatch {
   public void run() throws Exception {
     String json = "[\"DIAMONDS\", \"STARS\", \"HEARTS\"]";
 
-    Moshi moshi = new Moshi.Builder()
-        .add(DefaultOnDataMismatchAdapter.newFactory(Suit.class, Suit.CLUBS))
-        .build();
-    JsonAdapter<List<Suit>> jsonAdapter = moshi.adapter(
-        Types.newParameterizedType(List.class, Suit.class));
+    Moshi moshi =
+        new Moshi.Builder()
+            .add(DefaultOnDataMismatchAdapter.newFactory(Suit.class, Suit.CLUBS))
+            .build();
+    JsonAdapter<List<Suit>> jsonAdapter =
+        moshi.adapter(Types.newParameterizedType(List.class, Suit.class));
 
     List<Suit> suits = jsonAdapter.fromJson(json);
     System.out.println(suits);

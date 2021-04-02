@@ -15,27 +15,28 @@
  */
 package com.squareup.moshi;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-
+import static com.google.common.truth.Truth.assertThat;
 import static com.squareup.moshi.JsonReader.Token.BEGIN_ARRAY;
 import static com.squareup.moshi.JsonReader.Token.BEGIN_OBJECT;
 import static com.squareup.moshi.JsonReader.Token.NAME;
 import static com.squareup.moshi.JsonReader.Token.STRING;
 import static com.squareup.moshi.TestUtil.repeat;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import okio.BufferedSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 @SuppressWarnings("CheckReturnValue")
@@ -51,7 +52,8 @@ public final class JsonReaderTest {
     return factory.newReader(json);
   }
 
-  @Test public void readArray() throws IOException {
+  @Test
+  public void readArray() throws IOException {
     JsonReader reader = newReader("[true, true]");
     reader.beginArray();
     assertThat(reader.nextBoolean()).isTrue();
@@ -60,7 +62,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void readEmptyArray() throws IOException {
+  @Test
+  public void readEmptyArray() throws IOException {
     JsonReader reader = newReader("[]");
     reader.beginArray();
     assertThat(reader.hasNext()).isFalse();
@@ -68,7 +71,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void readObject() throws IOException {
+  @Test
+  public void readObject() throws IOException {
     JsonReader reader = newReader("{\"a\": \"android\", \"b\": \"banana\"}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -79,7 +83,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void readEmptyObject() throws IOException {
+  @Test
+  public void readEmptyObject() throws IOException {
     JsonReader reader = newReader("{}");
     reader.beginObject();
     assertThat(reader.hasNext()).isFalse();
@@ -87,7 +92,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipArray() throws IOException {
+  @Test
+  public void skipArray() throws IOException {
     JsonReader reader = newReader("{\"a\": [\"one\", \"two\", \"three\"], \"b\": 123}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -98,7 +104,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipArrayAfterPeek() throws Exception {
+  @Test
+  public void skipArrayAfterPeek() throws Exception {
     JsonReader reader = newReader("{\"a\": [\"one\", \"two\", \"three\"], \"b\": 123}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -110,15 +117,17 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipTopLevelObject() throws Exception {
+  @Test
+  public void skipTopLevelObject() throws Exception {
     JsonReader reader = newReader("{\"a\": [\"one\", \"two\", \"three\"], \"b\": 123}");
     reader.skipValue();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipObject() throws IOException {
-    JsonReader reader = newReader(
-        "{\"a\": { \"c\": [], \"d\": [true, true, {}] }, \"b\": \"banana\"}");
+  @Test
+  public void skipObject() throws IOException {
+    JsonReader reader =
+        newReader("{\"a\": { \"c\": [], \"d\": [true, true, {}] }, \"b\": \"banana\"}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
     reader.skipValue();
@@ -128,9 +137,14 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipObjectAfterPeek() throws Exception {
-    String json = "{" + "  \"one\": { \"num\": 1 }"
-        + ", \"two\": { \"num\": 2 }" + ", \"three\": { \"num\": 3 }" + "}";
+  @Test
+  public void skipObjectAfterPeek() throws Exception {
+    String json =
+        "{"
+            + "  \"one\": { \"num\": 1 }"
+            + ", \"two\": { \"num\": 2 }"
+            + ", \"three\": { \"num\": 3 }"
+            + "}";
     JsonReader reader = newReader(json);
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("one");
@@ -145,7 +159,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipInteger() throws IOException {
+  @Test
+  public void skipInteger() throws IOException {
     JsonReader reader = newReader("{\"a\":123456789,\"b\":-123456789}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -156,7 +171,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipDouble() throws IOException {
+  @Test
+  public void skipDouble() throws IOException {
     JsonReader reader = newReader("{\"a\":-123.456e-789,\"b\":123456789.0}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -167,7 +183,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void failOnUnknownFailsOnUnknownObjectValue() throws IOException {
+  @Test
+  public void failOnUnknownFailsOnUnknownObjectValue() throws IOException {
     JsonReader reader = newReader("{\"a\": 123}");
     reader.setFailOnUnknown(true);
     reader.beginObject();
@@ -176,7 +193,7 @@ public final class JsonReaderTest {
       reader.skipValue();
       fail();
     } catch (JsonDataException expected) {
-      assertThat(expected).hasMessage("Cannot skip unexpected NUMBER at $.a");
+      assertThat(expected).hasMessageThat().isEqualTo("Cannot skip unexpected NUMBER at $.a");
     }
     // Confirm that the reader is left in a consistent state after the exception.
     reader.setFailOnUnknown(false);
@@ -185,7 +202,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void failOnUnknownFailsOnUnknownArrayElement() throws IOException {
+  @Test
+  public void failOnUnknownFailsOnUnknownArrayElement() throws IOException {
     JsonReader reader = newReader("[\"a\", 123]");
     reader.setFailOnUnknown(true);
     reader.beginArray();
@@ -194,7 +212,7 @@ public final class JsonReaderTest {
       reader.skipValue();
       fail();
     } catch (JsonDataException expected) {
-      assertThat(expected).hasMessage("Cannot skip unexpected NUMBER at $[1]");
+      assertThat(expected).hasMessageThat().isEqualTo("Cannot skip unexpected NUMBER at $[1]");
     }
     // Confirm that the reader is left in a consistent state after the exception.
     reader.setFailOnUnknown(false);
@@ -203,11 +221,9 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void helloWorld() throws IOException {
-    String json = "{\n" +
-        "   \"hello\": true,\n" +
-        "   \"foo\": [\"world\"]\n" +
-        "}";
+  @Test
+  public void helloWorld() throws IOException {
+    String json = "{\n" + "   \"hello\": true,\n" + "   \"foo\": [\"world\"]\n" + "}";
     JsonReader reader = newReader(json);
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("hello");
@@ -220,7 +236,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void emptyString() throws Exception {
+  @Test
+  public void emptyString() throws Exception {
     try {
       newReader("").beginArray();
       fail();
@@ -233,27 +250,29 @@ public final class JsonReaderTest {
     }
   }
 
-  @Test public void characterUnescaping() throws IOException {
-    String json = "[\"a\","
-        + "\"a\\\"\","
-        + "\"\\\"\","
-        + "\":\","
-        + "\",\","
-        + "\"\\b\","
-        + "\"\\f\","
-        + "\"\\n\","
-        + "\"\\r\","
-        + "\"\\t\","
-        + "\" \","
-        + "\"\\\\\","
-        + "\"{\","
-        + "\"}\","
-        + "\"[\","
-        + "\"]\","
-        + "\"\\u0000\","
-        + "\"\\u0019\","
-        + "\"\\u20AC\""
-        + "]";
+  @Test
+  public void characterUnescaping() throws IOException {
+    String json =
+        "[\"a\","
+            + "\"a\\\"\","
+            + "\"\\\"\","
+            + "\":\","
+            + "\",\","
+            + "\"\\b\","
+            + "\"\\f\","
+            + "\"\\n\","
+            + "\"\\r\","
+            + "\"\\t\","
+            + "\" \","
+            + "\"\\\\\","
+            + "\"{\","
+            + "\"}\","
+            + "\"[\","
+            + "\"]\","
+            + "\"\\u0000\","
+            + "\"\\u0019\","
+            + "\"\\u20AC\""
+            + "]";
     JsonReader reader = newReader(json);
     reader.beginArray();
     assertThat(reader.nextString()).isEqualTo("a");
@@ -279,7 +298,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void integersWithFractionalPartSpecified() throws IOException {
+  @Test
+  public void integersWithFractionalPartSpecified() throws IOException {
     JsonReader reader = newReader("[1.0,1.0,1.0]");
     reader.beginArray();
     assertThat(reader.nextDouble()).isEqualTo(1.0);
@@ -287,16 +307,18 @@ public final class JsonReaderTest {
     assertThat(reader.nextLong()).isEqualTo(1L);
   }
 
-  @Test public void doubles() throws IOException {
-    String json = "[-0.0,"
-        + "1.0,"
-        + "1.7976931348623157E308,"
-        + "4.9E-324,"
-        + "0.0,"
-        + "-0.5,"
-        + "2.2250738585072014E-308,"
-        + "3.141592653589793,"
-        + "2.718281828459045]";
+  @Test
+  public void doubles() throws IOException {
+    String json =
+        "[-0.0,"
+            + "1.0,"
+            + "1.7976931348623157E308,"
+            + "4.9E-324,"
+            + "0.0,"
+            + "-0.5,"
+            + "2.2250738585072014E-308,"
+            + "3.141592653589793,"
+            + "2.718281828459045]";
     JsonReader reader = newReader(json);
     reader.beginArray();
     assertThat(reader.nextDouble()).isEqualTo(-0.0);
@@ -312,7 +334,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void strictNonFiniteDoubles() throws IOException {
+  @Test
+  public void strictNonFiniteDoubles() throws IOException {
     String json = "[NaN]";
     JsonReader reader = newReader(json);
     reader.beginArray();
@@ -323,7 +346,8 @@ public final class JsonReaderTest {
     }
   }
 
-  @Test public void strictQuotedNonFiniteDoubles() throws IOException {
+  @Test
+  public void strictQuotedNonFiniteDoubles() throws IOException {
     String json = "[\"NaN\"]";
     JsonReader reader = newReader(json);
     reader.beginArray();
@@ -331,11 +355,12 @@ public final class JsonReaderTest {
       reader.nextDouble();
       fail();
     } catch (JsonEncodingException expected) {
-      assertThat(expected).hasMessageContaining("NaN");
+      assertThat(expected).hasMessageThat().contains("NaN");
     }
   }
 
-  @Test public void lenientNonFiniteDoubles() throws IOException {
+  @Test
+  public void lenientNonFiniteDoubles() throws IOException {
     String json = "[NaN, -Infinity, Infinity]";
     JsonReader reader = newReader(json);
     reader.setLenient(true);
@@ -346,7 +371,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void lenientQuotedNonFiniteDoubles() throws IOException {
+  @Test
+  public void lenientQuotedNonFiniteDoubles() throws IOException {
     String json = "[\"NaN\", \"-Infinity\", \"Infinity\"]";
     JsonReader reader = newReader(json);
     reader.setLenient(true);
@@ -357,14 +383,12 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void longs() throws IOException {
+  @Test
+  public void longs() throws IOException {
     assumeTrue(factory.implementsStrictPrecision());
 
-    String json = "[0,0,0,"
-        + "1,1,1,"
-        + "-1,-1,-1,"
-        + "-9223372036854775808,"
-        + "9223372036854775807]";
+    String json =
+        "[0,0,0," + "1,1,1," + "-1,-1,-1," + "-9223372036854775808," + "9223372036854775807]";
     JsonReader reader = newReader(json);
     reader.beginArray();
     assertThat(reader.nextLong()).isEqualTo(0L);
@@ -392,7 +416,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void booleans() throws IOException {
+  @Test
+  public void booleans() throws IOException {
     JsonReader reader = newReader("[true,false]");
     reader.beginArray();
     assertThat(reader.nextBoolean()).isTrue();
@@ -401,7 +426,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void nextFailuresDoNotAdvance() throws IOException {
+  @Test
+  public void nextFailuresDoNotAdvance() throws IOException {
     JsonReader reader = newReader("{\"a\":true}");
     reader.beginObject();
     try {
@@ -461,7 +487,8 @@ public final class JsonReaderTest {
     reader.close();
   }
 
-  @Test public void integerMismatchWithDoubleDoesNotAdvance() throws IOException {
+  @Test
+  public void integerMismatchWithDoubleDoesNotAdvance() throws IOException {
     assumeTrue(factory.implementsStrictPrecision());
 
     JsonReader reader = newReader("[1.5]");
@@ -475,7 +502,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void integerMismatchWithLongDoesNotAdvance() throws IOException {
+  @Test
+  public void integerMismatchWithLongDoesNotAdvance() throws IOException {
     assumeTrue(factory.implementsStrictPrecision());
 
     JsonReader reader = newReader("[9223372036854775807]");
@@ -489,7 +517,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void longMismatchWithDoubleDoesNotAdvance() throws IOException {
+  @Test
+  public void longMismatchWithDoubleDoesNotAdvance() throws IOException {
     assumeTrue(factory.implementsStrictPrecision());
 
     JsonReader reader = newReader("[1.5]");
@@ -503,7 +532,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void stringNullIsNotNull() throws IOException {
+  @Test
+  public void stringNullIsNotNull() throws IOException {
     JsonReader reader = newReader("[\"null\"]");
     reader.beginArray();
     try {
@@ -513,7 +543,8 @@ public final class JsonReaderTest {
     }
   }
 
-  @Test public void nullLiteralIsNotAString() throws IOException {
+  @Test
+  public void nullLiteralIsNotAString() throws IOException {
     JsonReader reader = newReader("[null]");
     reader.beginArray();
     try {
@@ -523,7 +554,8 @@ public final class JsonReaderTest {
     }
   }
 
-  @Test public void topLevelValueTypes() throws IOException {
+  @Test
+  public void topLevelValueTypes() throws IOException {
     JsonReader reader1 = newReader("true");
     assertThat(reader1.nextBoolean()).isTrue();
     assertThat(reader1.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
@@ -549,26 +581,31 @@ public final class JsonReaderTest {
     assertThat(reader6.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void topLevelValueTypeWithSkipValue() throws IOException {
+  @Test
+  public void topLevelValueTypeWithSkipValue() throws IOException {
     JsonReader reader = newReader("true");
     reader.skipValue();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void deeplyNestedArrays() throws IOException {
+  @Test
+  public void deeplyNestedArrays() throws IOException {
     JsonReader reader = newReader("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]");
     for (int i = 0; i < 31; i++) {
       reader.beginArray();
     }
-    assertThat(reader.getPath()).isEqualTo("$[0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0]"
-        + "[0][0][0][0][0][0][0][0][0][0][0][0][0]");
+    assertThat(reader.getPath())
+        .isEqualTo(
+            "$[0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0]"
+                + "[0][0][0][0][0][0][0][0][0][0][0][0][0]");
     for (int i = 0; i < 31; i++) {
       reader.endArray();
     }
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void deeplyNestedObjects() throws IOException {
+  @Test
+  public void deeplyNestedObjects() throws IOException {
     // Build a JSON document structured like {"a":{"a":{"a":{"a":true}}}}, but 31 levels deep.
     String array = "{\"a\":%s}";
     String json = "true";
@@ -590,7 +627,8 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipVeryLongUnquotedString() throws IOException {
+  @Test
+  public void skipVeryLongUnquotedString() throws IOException {
     JsonReader reader = newReader("[" + repeat('x', 8192) + "]");
     reader.setLenient(true);
     reader.beginArray();
@@ -598,49 +636,56 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void skipTopLevelUnquotedString() throws IOException {
+  @Test
+  public void skipTopLevelUnquotedString() throws IOException {
     JsonReader reader = newReader(repeat('x', 8192));
     reader.setLenient(true);
     reader.skipValue();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipVeryLongQuotedString() throws IOException {
+  @Test
+  public void skipVeryLongQuotedString() throws IOException {
     JsonReader reader = newReader("[\"" + repeat('x', 8192) + "\"]");
     reader.beginArray();
     reader.skipValue();
     reader.endArray();
   }
 
-  @Test public void skipTopLevelQuotedString() throws IOException {
+  @Test
+  public void skipTopLevelQuotedString() throws IOException {
     JsonReader reader = newReader("\"" + repeat('x', 8192) + "\"");
     reader.setLenient(true);
     reader.skipValue();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void stringAsNumberWithTruncatedExponent() throws IOException {
+  @Test
+  public void stringAsNumberWithTruncatedExponent() throws IOException {
     JsonReader reader = newReader("[123e]");
     reader.setLenient(true);
     reader.beginArray();
     assertThat(reader.peek()).isEqualTo(STRING);
   }
 
-  @Test public void stringAsNumberWithDigitAndNonDigitExponent() throws IOException {
+  @Test
+  public void stringAsNumberWithDigitAndNonDigitExponent() throws IOException {
     JsonReader reader = newReader("[123e4b]");
     reader.setLenient(true);
     reader.beginArray();
     assertThat(reader.peek()).isEqualTo(STRING);
   }
 
-  @Test public void stringAsNumberWithNonDigitExponent() throws IOException {
+  @Test
+  public void stringAsNumberWithNonDigitExponent() throws IOException {
     JsonReader reader = newReader("[123eb]");
     reader.setLenient(true);
     reader.beginArray();
     assertThat(reader.peek()).isEqualTo(STRING);
   }
 
-  @Test public void emptyStringName() throws IOException {
+  @Test
+  public void emptyStringName() throws IOException {
     JsonReader reader = newReader("{\"\":true}");
     reader.setLenient(true);
     assertThat(reader.peek()).isEqualTo(BEGIN_OBJECT);
@@ -654,13 +699,15 @@ public final class JsonReaderTest {
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void validEscapes() throws IOException {
+  @Test
+  public void validEscapes() throws IOException {
     JsonReader reader = newReader("[\"\\\"\\\\\\/\\b\\f\\n\\r\\t\"]");
     reader.beginArray();
     assertThat(reader.nextString()).isEqualTo("\"\\/\b\f\n\r\t");
   }
 
-  @Test public void selectName() throws IOException {
+  @Test
+  public void selectName() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("{\"a\": 5, \"b\": 5, \"c\": 5, \"d\": 5}");
@@ -696,7 +743,8 @@ public final class JsonReaderTest {
   }
 
   /** Select does match necessarily escaping. The decoded value is used in the path. */
-  @Test public void selectNameNecessaryEscaping() throws IOException {
+  @Test
+  public void selectNameNecessaryEscaping() throws IOException {
     JsonReader.Options options = JsonReader.Options.of("\n", "\u0000", "\"");
 
     JsonReader reader = newReader("{\"\\n\": 5,\"\\u0000\": 5, \"\\\"\": 5}");
@@ -714,7 +762,8 @@ public final class JsonReaderTest {
   }
 
   /** Select removes unnecessary escaping from the source JSON. */
-  @Test public void selectNameUnnecessaryEscaping() throws IOException {
+  @Test
+  public void selectNameUnnecessaryEscaping() throws IOException {
     JsonReader.Options options = JsonReader.Options.of("coffee", "tea");
 
     JsonReader reader = newReader("{\"cof\\u0066ee\":5, \"\\u0074e\\u0061\":4, \"water\":3}");
@@ -737,7 +786,8 @@ public final class JsonReaderTest {
     reader.endObject();
   }
 
-  @Test public void selectNameUnquoted() throws Exception {
+  @Test
+  public void selectNameUnquoted() throws Exception {
     JsonReader.Options options = JsonReader.Options.of("a", "b");
 
     JsonReader reader = newReader("{a:2}");
@@ -752,7 +802,8 @@ public final class JsonReaderTest {
     reader.endObject();
   }
 
-  @Test public void selectNameSingleQuoted() throws IOException {
+  @Test
+  public void selectNameSingleQuoted() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b");
 
     JsonReader reader = newReader("{'a':5}");
@@ -767,7 +818,8 @@ public final class JsonReaderTest {
     reader.endObject();
   }
 
-  @Test public void selectString() throws IOException {
+  @Test
+  public void selectString() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("[\"a\", \"b\", \"c\", \"d\"]");
@@ -794,7 +846,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void selectStringNecessaryEscaping() throws Exception {
+  @Test
+  public void selectStringNecessaryEscaping() throws Exception {
     JsonReader.Options options = JsonReader.Options.of("\n", "\u0000", "\"");
 
     JsonReader reader = newReader("[\"\\n\",\"\\u0000\", \"\\\"\"]");
@@ -806,7 +859,8 @@ public final class JsonReaderTest {
   }
 
   /** Select strips unnecessarily-escaped strings. */
-  @Test public void selectStringUnnecessaryEscaping() throws IOException {
+  @Test
+  public void selectStringUnnecessaryEscaping() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("[\"\\u0061\", \"b\", \"\\u0063\"]");
@@ -817,7 +871,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void selectStringUnquoted() throws IOException {
+  @Test
+  public void selectStringUnquoted() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("[a, \"b\", c]");
@@ -829,7 +884,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void selectStringSingleQuoted() throws IOException {
+  @Test
+  public void selectStringSingleQuoted() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("['a', \"b\", c]");
@@ -841,7 +897,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void selectStringMaintainsReaderState() throws IOException {
+  @Test
+  public void selectStringMaintainsReaderState() throws IOException {
     JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
 
     JsonReader reader = newReader("[\"\\u0061\", \"42\"]");
@@ -854,7 +911,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void selectStringWithoutString() throws IOException {
+  @Test
+  public void selectStringWithoutString() throws IOException {
     JsonReader.Options numbers = JsonReader.Options.of("1", "2.0", "true", "4");
 
     JsonReader reader = newReader("[0, 2.0, true, \"4\"]");
@@ -869,7 +927,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void stringToNumberCoersion() throws Exception {
+  @Test
+  public void stringToNumberCoersion() throws Exception {
     JsonReader reader = newReader("[\"0\", \"9223372036854775807\", \"1.5\"]");
     reader.beginArray();
     assertThat(reader.nextInt()).isEqualTo(0);
@@ -878,7 +937,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void unnecessaryPrecisionNumberCoersion() throws Exception {
+  @Test
+  public void unnecessaryPrecisionNumberCoersion() throws Exception {
     JsonReader reader = newReader("[\"0.0\", \"9223372036854775807.0\"]");
     reader.beginArray();
     assertThat(reader.nextInt()).isEqualTo(0);
@@ -886,7 +946,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void nanInfinityDoubleCoersion() throws Exception {
+  @Test
+  public void nanInfinityDoubleCoersion() throws Exception {
     JsonReader reader = newReader("[\"NaN\", \"Infinity\", \"-Infinity\"]");
     reader.beginArray();
     reader.setLenient(true);
@@ -896,7 +957,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void intMismatchWithStringDoesNotAdvance() throws Exception {
+  @Test
+  public void intMismatchWithStringDoesNotAdvance() throws Exception {
     JsonReader reader = newReader("[\"a\"]");
     reader.beginArray();
     try {
@@ -908,7 +970,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void longMismatchWithStringDoesNotAdvance() throws Exception {
+  @Test
+  public void longMismatchWithStringDoesNotAdvance() throws Exception {
     JsonReader reader = newReader("[\"a\"]");
     reader.beginArray();
     try {
@@ -920,7 +983,8 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void doubleMismatchWithStringDoesNotAdvance() throws Exception {
+  @Test
+  public void doubleMismatchWithStringDoesNotAdvance() throws Exception {
     JsonReader reader = newReader("[\"a\"]");
     reader.beginArray();
     try {
@@ -932,38 +996,44 @@ public final class JsonReaderTest {
     reader.endArray();
   }
 
-  @Test public void readJsonValueInt() throws IOException {
+  @Test
+  public void readJsonValueInt() throws IOException {
     JsonReader reader = newReader("1");
     Object value = reader.readJsonValue();
     assertThat(value).isEqualTo(1.0);
   }
 
-  @Test public void readJsonValueMap() throws IOException {
+  @Test
+  public void readJsonValueMap() throws IOException {
     JsonReader reader = newReader("{\"hello\": \"world\"}");
     Object value = reader.readJsonValue();
     assertThat(value).isEqualTo(Collections.singletonMap("hello", "world"));
   }
 
-  @Test public void readJsonValueList() throws IOException {
+  @Test
+  public void readJsonValueList() throws IOException {
     JsonReader reader = newReader("[\"a\", \"b\"]");
     Object value = reader.readJsonValue();
     assertThat(value).isEqualTo(Arrays.asList("a", "b"));
   }
 
-  @Test public void readJsonValueListMultipleTypes() throws IOException {
+  @Test
+  public void readJsonValueListMultipleTypes() throws IOException {
     JsonReader reader = newReader("[\"a\", 5, false]");
     Object value = reader.readJsonValue();
     assertThat(value).isEqualTo(Arrays.asList("a", 5.0, false));
   }
 
-  @Test public void readJsonValueNestedListInMap() throws IOException {
+  @Test
+  public void readJsonValueNestedListInMap() throws IOException {
     JsonReader reader = newReader("{\"pizzas\": [\"cheese\", \"pepperoni\"]}");
     Object value = reader.readJsonValue();
-    assertThat(value).isEqualTo(
-        Collections.singletonMap("pizzas", Arrays.asList("cheese", "pepperoni")));
+    assertThat(value)
+        .isEqualTo(Collections.singletonMap("pizzas", Arrays.asList("cheese", "pepperoni")));
   }
 
-  @Test public void skipName() throws IOException {
+  @Test
+  public void skipName() throws IOException {
     JsonReader reader = newReader("{\"a\":1}");
     reader.beginObject();
     reader.skipName();
@@ -972,7 +1042,8 @@ public final class JsonReaderTest {
     reader.endObject();
   }
 
-  @Test public void skipNameFailUnknown() throws IOException {
+  @Test
+  public void skipNameFailUnknown() throws IOException {
     JsonReader reader = newReader("{\"a\":1,\"b\":2}");
     reader.setFailOnUnknown(true);
     reader.beginObject();
@@ -982,11 +1053,12 @@ public final class JsonReaderTest {
       reader.skipName();
       fail();
     } catch (JsonDataException e) {
-      assertThat(e).hasMessage("Cannot skip unexpected NAME at $.b");
+      assertThat(e).hasMessageThat().isEqualTo("Cannot skip unexpected NAME at $.b");
     }
   }
 
-  @Test public void skipNameOnValueFails() throws IOException {
+  @Test
+  public void skipNameOnValueFails() throws IOException {
     JsonReader reader = newReader("1");
     try {
       reader.skipName();
@@ -996,51 +1068,62 @@ public final class JsonReaderTest {
     assertThat(reader.nextInt()).isEqualTo(1);
   }
 
-  @Test public void emptyDocumentHasNextReturnsFalse() throws IOException {
+  @Test
+  public void emptyDocumentHasNextReturnsFalse() throws IOException {
     JsonReader reader = newReader("1");
     reader.readJsonValue();
     assertThat(reader.hasNext()).isFalse();
   }
 
-  @Test public void skipValueAtEndOfObjectFails() throws IOException {
+  @Test
+  public void skipValueAtEndOfObjectFails() throws IOException {
     JsonReader reader = newReader("{}");
     reader.beginObject();
     try {
       reader.skipValue();
       fail();
     } catch (JsonDataException expected) {
-      assertThat(expected).hasMessage("Expected a value but was END_OBJECT at path $.");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Expected a value but was END_OBJECT at path $.");
     }
     reader.endObject();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipValueAtEndOfArrayFails() throws IOException {
+  @Test
+  public void skipValueAtEndOfArrayFails() throws IOException {
     JsonReader reader = newReader("[]");
     reader.beginArray();
     try {
       reader.skipValue();
       fail();
     } catch (JsonDataException expected) {
-      assertThat(expected).hasMessage("Expected a value but was END_ARRAY at path $[0]");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Expected a value but was END_ARRAY at path $[0]");
     }
     reader.endArray();
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void skipValueAtEndOfDocumentFails() throws IOException {
+  @Test
+  public void skipValueAtEndOfDocumentFails() throws IOException {
     JsonReader reader = newReader("1");
     reader.nextInt();
     try {
       reader.skipValue();
       fail();
     } catch (JsonDataException expected) {
-      assertThat(expected).hasMessage("Expected a value but was END_DOCUMENT at path $");
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Expected a value but was END_DOCUMENT at path $");
     }
     assertThat(reader.peek()).isEqualTo(JsonReader.Token.END_DOCUMENT);
   }
 
-  @Test public void basicPeekJson() throws IOException {
+  @Test
+  public void basicPeekJson() throws IOException {
     JsonReader reader = newReader("{\"a\":12,\"b\":[34,56],\"c\":78}");
     reader.beginObject();
     assertThat(reader.nextName()).isEqualTo("a");
@@ -1072,7 +1155,8 @@ public final class JsonReaderTest {
    * reader. Before each of the real reader’s operations we create a peeking reader and let it read
    * the rest of the document.
    */
-  @Test public void peekJsonReader() throws IOException {
+  @Test
+  public void peekJsonReader() throws IOException {
     JsonReader reader = newReader("[12,34,{\"a\":56,\"b\":78},90]");
     for (int i = 0; i < 12; i++) {
       readPeek12Steps(reader.peekJson(), i, 12);
@@ -1138,15 +1222,17 @@ public final class JsonReaderTest {
   }
 
   /** Confirm that we can peek in every state of the UTF-8 reader. */
-  @Test public void peekAfterPeek() throws IOException {
-    JsonReader reader = newReader(
-        "[{\"a\":\"aaa\",'b':'bbb',c:c,\"d\":\"d\"},true,false,null,1,2.0]");
+  @Test
+  public void peekAfterPeek() throws IOException {
+    JsonReader reader =
+        newReader("[{\"a\":\"aaa\",'b':'bbb',c:c,\"d\":\"d\"},true,false,null,1,2.0]");
     reader.setLenient(true);
     readValue(reader, true);
     reader.peekJson();
   }
 
-  @Test public void peekAfterPromoteNameToValue() throws IOException {
+  @Test
+  public void peekAfterPromoteNameToValue() throws IOException {
     JsonReader reader = newReader("{\"a\":\"b\"}");
     reader.beginObject();
     reader.promoteNameToValue();
@@ -1155,6 +1241,229 @@ public final class JsonReaderTest {
     assertEquals("b", reader.peekJson().nextString());
     assertEquals("b", reader.nextString());
     reader.endObject();
+  }
+
+  @Test
+  public void promoteStringNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"a\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    assertEquals("a", reader.nextString());
+    assertEquals("b", reader.nextString());
+    reader.endObject();
+  }
+
+  @Test
+  public void promoteDoubleNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"5\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    assertEquals(5.0, reader.nextDouble(), 0.0);
+    assertEquals("b", reader.nextString());
+    reader.endObject();
+  }
+
+  @Test
+  public void promoteLongNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"5\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    assertEquals(5L, reader.nextLong());
+    assertEquals("b", reader.nextString());
+    reader.endObject();
+  }
+
+  @Test
+  public void promoteNullNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"null\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    try {
+      reader.nextNull();
+      fail();
+    } catch (JsonDataException expected) {
+    }
+    assertEquals("null", reader.nextString());
+  }
+
+  @Test
+  public void promoteBooleanNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"true\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    try {
+      reader.nextBoolean();
+      fail();
+    } catch (JsonDataException expected) {
+    }
+    assertEquals("true", reader.nextString());
+  }
+
+  @Test
+  public void promoteBooleanNameToValueCannotBeReadAsName() throws IOException {
+    JsonReader reader = newReader("{\"true\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    try {
+      reader.nextName();
+      fail();
+    } catch (JsonDataException expected) {
+    }
+    assertEquals("true", reader.nextString());
+  }
+
+  @Test
+  public void promoteSkippedNameToValue() throws IOException {
+    JsonReader reader = newReader("{\"true\":\"b\"}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    reader.skipValue();
+    assertEquals("b", reader.nextString());
+  }
+
+  @Test
+  public void promoteNameToValueAtEndOfObject() throws IOException {
+    JsonReader reader = newReader("{}");
+    reader.beginObject();
+    reader.promoteNameToValue();
+    assertThat(reader.hasNext()).isFalse();
+    reader.endObject();
+  }
+
+  @Test
+  public void optionsStrings() {
+    String[] options = new String[] {"a", "b", "c"};
+    JsonReader.Options abc = JsonReader.Options.of("a", "b", "c");
+    List<String> strings = abc.strings();
+    assertThat(options).asList().containsExactlyElementsIn(strings).inOrder();
+    try {
+      // Confirm it's unmodifiable and we can't mutate the original underlying array
+      strings.add("d");
+      fail();
+    } catch (UnsupportedOperationException expected) {
+
+    }
+  }
+
+  @Test
+  public void nextSourceString() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":\"this is a string\"}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("\"this is a string\"");
+    }
+  }
+
+  @Test
+  public void nextSourceLong() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":-2.0}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("-2.0");
+    }
+  }
+
+  @Test
+  public void nextSourceNull() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":null}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("null");
+    }
+  }
+
+  @Test
+  public void nextSourceBoolean() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":false}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("false");
+    }
+  }
+
+  @Test
+  public void nextSourceObject() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":{\"b\":2.0,\"c\":3.0}}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("{\"b\":2.0,\"c\":3.0}");
+    }
+  }
+
+  @Test
+  public void nextSourceArray() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":[2.0,2.0,3.0]}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("[2.0,2.0,3.0]");
+    }
+  }
+
+  /**
+   * When we call {@link JsonReader#selectString} it causes the reader to consume bytes of the input
+   * string. When attempting to read it as a stream afterwards the bytes are reconstructed.
+   */
+  @Test
+  public void nextSourceStringBuffered() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":\"b\"}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    assertThat(reader.selectString(JsonReader.Options.of("x'"))).isEqualTo(-1);
+    try (BufferedSource valueSource = reader.nextSource()) {
+      assertThat(valueSource.readUtf8()).isEqualTo("\"b\"");
+    }
+  }
+
+  /** If we don't read the bytes of the source, they JsonReader doesn't lose its place. */
+  @Test
+  public void nextSourceNotConsumed() throws IOException {
+    // language=JSON
+    JsonReader reader = newReader("{\"a\":\"b\",\"c\":\"d\"}");
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("a");
+    reader.nextSource(); // Not closed.
+    assertThat(reader.nextName()).isEqualTo("c");
+    assertThat(reader.nextString()).isEqualTo("d");
+  }
+
+  @SuppressWarnings("rawtypes")
+  @Test
+  public void tags() throws IOException {
+    JsonReader reader = newReader("{}");
+    assertThat(reader.tag(Integer.class)).isNull();
+    assertThat(reader.tag(CharSequence.class)).isNull();
+
+    reader.setTag(Integer.class, 1);
+    reader.setTag(CharSequence.class, "Foo");
+    try {
+      reader.setTag((Class) CharSequence.class, 1);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Tag value must be of type java.lang.CharSequence");
+    }
+
+    Object intTag = reader.tag(Integer.class);
+    assertThat(intTag).isEqualTo(1);
+    assertThat(intTag).isInstanceOf(Integer.class);
+    Object charSequenceTag = reader.tag(CharSequence.class);
+    assertThat(charSequenceTag).isEqualTo("Foo");
+    assertThat(charSequenceTag).isInstanceOf(String.class);
+    assertThat(reader.tag(String.class)).isNull();
   }
 
   /** Peek a value, then read it, recursively. */

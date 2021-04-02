@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ package com.squareup.moshi.recipes.models;
 
 import java.util.List;
 
-@SuppressWarnings("checkstyle:membername")
 public final class BlackjackHand {
   public final Card hidden_card;
   public final List<Card> visible_cards;
@@ -27,7 +26,8 @@ public final class BlackjackHand {
     this.visible_cards = visibleCards;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "hidden=" + hidden_card + ",visible=" + visible_cards;
   }
 }

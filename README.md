@@ -230,9 +230,8 @@ For example, if you have an adapter that doesn't support nullable values, you ca
 String dateJson = "\"2018-11-26T11:04:19.342668Z\"";
 String nullDateJson = "null";
 
-// RFC 3339 date adapter, doesn't support null by default
-// See also: https://github.com/square/moshi/tree/master/adapters
-JsonAdapter<Date> adapter = new Rfc3339DateJsonAdapter();
+// Hypothetical IsoDateDapter, doesn't support null by default
+JsonAdapter<Date> adapter = new IsoDateDapter();
 
 Date date = adapter.fromJson(dateJson);
 System.out.println(date); // Mon Nov 26 12:04:19 CET 2018
@@ -281,7 +280,7 @@ reflection, Moshi is designed to help you out when things go wrong.
 JsonDataException: Expected one of [CLUBS, DIAMONDS, HEARTS, SPADES] but was ANCHOR at path $.visible_cards[2].suit
   at com.squareup.moshi.JsonAdapters$11.fromJson(JsonAdapters.java:188)
   at com.squareup.moshi.JsonAdapters$11.fromJson(JsonAdapters.java:180)
-	...
+  ...
 ```
 
 Moshi always throws a standard `java.io.IOException` if there is an error reading the JSON document,
@@ -505,6 +504,99 @@ public final class BlackjackHand {
 }
 ```
 
+### Composing Adapters
+
+In some situations Moshi's default Java-to-JSON conversion isn't sufficient. You can compose
+adapters to build upon the standard conversion.
+
+In this example, we turn serialize nulls, then delegate to the built-in adapter:
+
+```java
+class TournamentWithNullsAdapter {
+  @ToJson void toJson(JsonWriter writer, Tournament tournament,
+      JsonAdapter<Tournament> delegate) throws IOException {
+    boolean wasSerializeNulls = writer.getSerializeNulls();
+    writer.setSerializeNulls(true);
+    try {
+      delegate.toJson(writer, tournament);
+    } finally {
+      writer.setLenient(wasSerializeNulls);
+    }
+  }
+}
+```
+
+When we use this to serialize a tournament, nulls are written! But nulls elsewhere in our JSON
+document are skipped as usual.
+
+Moshi has a powerful composition system in its `JsonAdapter.Factory` interface. We can hook in to
+the encoding and decoding process for any type, even without knowing about the types beforehand. In
+this example, we customize types annotated `@AlwaysSerializeNulls`, which an annotation we create,
+not built-in to Moshi:
+
+```java
+@Target(TYPE)
+@Retention(RUNTIME)
+public @interface AlwaysSerializeNulls {}
+```
+
+```java
+@AlwaysSerializeNulls
+static class Car {
+  String make;
+  String model;
+  String color;
+}
+```
+
+Each `JsonAdapter.Factory` interface is invoked by `Moshi` when it needs to build an adapter for a
+user's type. The factory either returns an adapter to use, or null if it doesn't apply to the
+requested type. In our case we match all classes that have our annotation.
+
+```java
+static class AlwaysSerializeNullsFactory implements JsonAdapter.Factory {
+  @Override public JsonAdapter<?> create(
+      Type type, Set<? extends Annotation> annotations, Moshi moshi) {
+    Class<?> rawType = Types.getRawType(type);
+    if (!rawType.isAnnotationPresent(AlwaysSerializeNulls.class)) {
+      return null;
+    }
+
+    JsonAdapter<Object> delegate = moshi.nextAdapter(this, type, annotations);
+    return delegate.serializeNulls();
+  }
+}
+```
+
+After determining that it applies, the factory looks up Moshi's built-in adapter by calling
+`Moshi.nextAdapter()`. This is key to the composition mechanism: adapters delegate to each other!
+The composition in this example is simple: it applies the `serializeNulls()` transform on the
+delegate.
+
+Composing adapters can be very sophisticated:
+
+ * An adapter could transform the input object before it is JSON-encoded. A string could be
+   trimmed or truncated; a value object could be simplified or normalized.
+
+ * An adapter could repair the output object after it is JSON-decoded. It could fill-in missing
+   data or discard unwanted data.
+
+ * The JSON could be given extra structure, such as wrapping values in objects or arrays.
+
+Moshi is itself built on the pattern of repeatedly composing adapters. For example, Moshi's built-in
+adapter for `List<T>` delegates to the adapter of `T`, and calls it repeatedly.
+
+### Precedence
+
+Moshi's composition mechanism tries to find the best adapter for each type. It starts with the first
+adapter or factory registered with `Moshi.Builder.add()`, and proceeds until it finds an adapter for
+the target type.
+
+If a type can be matched multiple adapters, the earliest one wins.
+
+To register an adapter at the end of the list, use `Moshi.Builder.addLast()` instead. This is most
+useful when registering general-purpose adapters, such as the `KotlinJsonAdapterFactory` below.
+
 Kotlin
 ------
 
@@ -518,14 +610,12 @@ JSON. Enable it by adding the `KotlinJsonAdapterFactory` to your `Moshi.Builder`
 
 ```kotlin
 val moshi = Moshi.Builder()
-    // ... add your own JsonAdapters and factories ...
-    .add(KotlinJsonAdapterFactory())
+    .addLast(KotlinJsonAdapterFactory())
     .build()
 ```
 
-Moshi’s adapters are ordered by precedence, so you always want to add the Kotlin adapter after your
-own custom adapters. Otherwise the `KotlinJsonAdapterFactory` will take precedence and your custom
-adapters will not be called.
+Moshi’s adapters are ordered by precedence, so you should use `addLast()` with
+`KotlinJsonAdapterFactory`, and `add()` with your custom adapters.
 
 The reflection adapter requires the following additional dependency:
 
@@ -533,12 +623,12 @@ The reflection adapter requires the following additional dependency:
 <dependency>
   <groupId>com.squareup.moshi</groupId>
   <artifactId>moshi-kotlin</artifactId>
-  <version>1.9.2</version>
+  <version>1.12.0</version>
 </dependency>
 ```
 
 ```kotlin
-implementation("com.squareup.moshi:moshi-kotlin:1.9.2")
+implementation("com.squareup.moshi:moshi-kotlin:1.11.0")
 ```
 
 Note that the reflection adapter transitively depends on the `kotlin-reflect` library which is a
@@ -568,13 +658,13 @@ add the following to your build to enable the annotation processor:
 <dependency>
   <groupId>com.squareup.moshi</groupId>
   <artifactId>moshi-kotlin-codegen</artifactId>
-  <version>1.9.2</version>
+  <version>1.12.0</version>
   <scope>provided</scope>
 </dependency>
 ```
 
 ```kotlin
-kapt("com.squareup.moshi:moshi-kotlin-codegen:1.9.2")
+kapt("com.squareup.moshi:moshi-kotlin-codegen:1.11.0")
 ```
 
 You must also have the `kotlin-stdlib` dependency on the classpath during compilation in order for
@@ -600,12 +690,12 @@ Download [the latest JAR][dl] or depend via Maven:
 <dependency>
   <groupId>com.squareup.moshi</groupId>
   <artifactId>moshi</artifactId>
-  <version>1.9.2</version>
+  <version>1.12.0</version>
 </dependency>
 ```
 or Gradle:
 ```kotlin
-implementation("com.squareup.moshi:moshi:1.9.2")
+implementation("com.squareup.moshi:moshi:1.11.0")
 ```
 
 Snapshots of the development version are available in [Sonatype's `snapshots` repository][snap].
@@ -614,11 +704,7 @@ Snapshots of the development version are available in [Sonatype's `snapshots` re
 R8 / ProGuard
 --------
 
-If you are using R8 or ProGuard add the options from [this file](https://github.com/square/moshi/blob/master/moshi/src/main/resources/META-INF/proguard/moshi.pro). If using Android, this requires Android Gradle Plugin 3.2.0+.
-
-The `moshi-kotlin` artifact additionally requires the options from [this file](https://github.com/square/moshi/blob/master/kotlin/reflect/src/main/resources/META-INF/proguard/moshi-kotlin.pro)
-
-You might also need rules for Okio which is a dependency of this library.
+Moshi contains minimally required rules for its own internals to work without need for consumers to embed their own. However if you are using reflective serialization and R8 or ProGuard, you must add keep rules in your proguard configuration file for your reflectively serialized classes.
 
 License
 --------

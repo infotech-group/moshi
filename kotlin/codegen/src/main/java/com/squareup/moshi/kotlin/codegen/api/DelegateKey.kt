@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,27 +47,31 @@ internal data class DelegateKey(
     propertyName: String
   ): PropertySpec {
     val qualifierNames = jsonQualifiers.joinToString("") {
-      "At${it.className.simpleName}"
+      "At${it.typeName.rawType().simpleName}"
     }
     val adapterName = nameAllocator.newName(
-        "${type.toVariableName().decapitalize()}${qualifierNames}Adapter", this)
+      "${type.toVariableName().decapitalize()}${qualifierNames}Adapter",
+      this
+    )
 
     val adapterTypeName = JsonAdapter::class.asClassName().parameterizedBy(type)
-    val standardArgs = arrayOf(moshiParameter,
-        typeRenderer.render(type))
+    val standardArgs = arrayOf(
+      moshiParameter,
+      typeRenderer.render(type)
+    )
     val (initializerString, args) = when {
       jsonQualifiers.isEmpty() -> ", %M()" to arrayOf(MemberName("kotlin.collections", "emptySet"))
       else -> {
         ", %T.getFieldJsonQualifierAnnotations(javaClass, " +
-            "%S)" to arrayOf(Types::class.asTypeName(), adapterName)
+          "%S)" to arrayOf(Types::class.asTypeName(), adapterName)
       }
     }
     val finalArgs = arrayOf(*standardArgs, *args, propertyName)
 
     return PropertySpec.builder(adapterName, adapterTypeName, KModifier.PRIVATE)
-        .addAnnotations(jsonQualifiers)
-        .initializer("%N.adapter(%L$initializerString, %S)", *finalArgs)
-        .build()
+      .addAnnotations(jsonQualifiers)
+      .initializer("%N.adapter(%L$initializerString, %S)", *finalArgs)
+      .build()
   }
 }
 

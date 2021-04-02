@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,24 +56,24 @@ internal class PropertyGenerator(
 
   fun generateLocalProperty(): PropertySpec {
     return PropertySpec.builder(localName, target.type.copy(nullable = true))
-        .mutable(true)
-        .apply {
-          if (hasConstructorDefault) {
-            // We default to the primitive default type, as reflectively invoking the constructor
-            // without this (even though it's a throwaway) will fail argument type resolution in
-            // the reflective invocation.
-            initializer(target.type.defaultPrimitiveValue())
-          } else {
-            initializer("null")
-          }
+      .mutable(true)
+      .apply {
+        if (hasConstructorDefault) {
+          // We default to the primitive default type, as reflectively invoking the constructor
+          // without this (even though it's a throwaway) will fail argument type resolution in
+          // the reflective invocation.
+          initializer(target.type.defaultPrimitiveValue())
+        } else {
+          initializer("null")
         }
-        .build()
+      }
+      .build()
   }
 
   fun generateLocalIsPresentProperty(): PropertySpec {
     return PropertySpec.builder(localIsPresentName, BOOLEAN)
-        .mutable(true)
-        .initializer("false")
-        .build()
+      .mutable(true)
+      .initializer("false")
+      .build()
   }
 }
