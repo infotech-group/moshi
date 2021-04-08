@@ -1,0 +1,12 @@
+apply plugin: 'maven-publish'
+
+publishing {
+  repositories {
+    infotech(it)
+  }
+}
+
+/**
+ * publish - gradlew publishMavenPublicationToInfotechRepository
+ * pTML    - gradlew publishMavenPublicationToMavenLocal
+ */

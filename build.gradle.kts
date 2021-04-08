@@ -108,6 +108,9 @@ spotless {
 }
 
 subprojects {
+
+   this@subprojects.apply(from = rootProject.file("infotech-artifactory-publish.gradle"))
+
   repositories {
     mavenCentral()
     // Required for Dokka
